@@ -16,38 +16,14 @@ steps:
     echo "Terraform installed."
   displayName: 'Install Terraform'
 
-
-- task: AzureCLI@2
-  displayName: 'Azure Login'
-  inputs:
-    azureSubscription: 'lneAzure3' # Replace with the name of your Azure service connection
-    scriptType: 'ps'
-    scriptLocation: 'inlineScript'
-    inlineScript: 'az account show'  # This command verifies the Azure CLI login status
+- script: |
+    echo "Terraform Init..."
+    terraform init
+    echo "Terraform Init complete."
+  displayName: 'Terraform Init'
 
 - script: |
-    # Initialize Terraform
-    terraform init
-
-    # Create a Terraform plan
-    terraform plan -out=tfplan
-
-    # Apply the Terraform plan (auto-approve for non-interactive execution)
-    terraform apply -auto-approve tfplan
-  displayName: 'Terraform Actions'
-
-- task: AzureCLI@2
-  displayName: 'Azure Logout'
-  inputs:
-    azureSubscription: '<Your Azure Service Connection Name>'  # Replace with the name of your Azure service connection
-    scriptType: 'ps'
-    scriptLocation: 'inlineScript'
-    inlineScript: 'az logout' 
-
-- task: AzureCLI@2
-  displayName: 'Azure Logout'
-  inputs:
-    azureSubscription: 'lneAzure3'  # Replace with the name of your Azure service connection
-    scriptType: 'ps'
-    scriptLocation: 'inlineScript'
-    inlineScript: 'az logout' 
+    echo "Terraform Apply..."
+    terraform apply -auto-approve
+    echo "Terraform Apply complete."
+  displayName: 'Terraform Apply'
