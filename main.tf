@@ -39,10 +39,20 @@ resource "azurerm_subnet" "subnet1" {
   address_prefixes     = ["10.1.1.0/24"]
 }
 
-########################### INTERFACE ################################
+########################### INTERFACE & IP ################################
+
+
+resource "azurerm_public_ip" "Vm_Public_Ip" {
+  name                = "VM-public-ip"
+  location            = azurerm_resource_group.cub_roshan_rg.location
+  resource_group_name = azurerm_resource_group.cub_roshan_rg.name
+  allocation_method   = "Static" 
+  sku                 = "Standard" 
+}
+
 
 resource "azurerm_network_interface" "test-int" {
-  name                = "test-int"
+  name                = "VM-NIC"
   location            = azurerm_resource_group.cub_roshan_rg.location
   resource_group_name = azurerm_resource_group.cub_roshan_rg.name
 
@@ -50,9 +60,11 @@ resource "azurerm_network_interface" "test-int" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet1.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = azurerm_public_ip.Vm_Public_Ip.id
   }
 
 }
+
 
 ########################### Availability Set ################################
 
@@ -126,7 +138,7 @@ resource "azurerm_subnet_network_security_group_association" "test-assosciation"
 ########################### Storage Account ################################
 
 resource "azurerm_storage_account" "sa" {
-  name                     = "cubstorageaccount001"
+  name                     = "cubstorageaccount0001"
   resource_group_name      = azurerm_resource_group.cub_roshan_rg.name
   location                 = azurerm_resource_group.cub_roshan_rg.location
   account_tier             = "Standard"
