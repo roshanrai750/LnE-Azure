@@ -1,5 +1,20 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">=3.62.1"
+    }
+  }
+}
+
+
 provider "azurerm" {
+  subscription_id = "411a6b8b-78eb-47c4-80c7-666ab59a7020"
+  client_id       = "d8028c02-3e42-40d0-bb8b-79407e2b9180"
+  client_secret   = "00N8Q~giYNlgBgn1nsivHhxwIKekzWuGHdU1laNO"
+  tenant_id       = "d032994e-e52c-4d44-bc79-9fd88e88ad02"
   features {}
+
 }
 
 ####################### Resource Grorup ###########################
