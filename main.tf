@@ -200,3 +200,144 @@ resource "azurerm_virtual_network" "vnet2" {
   resource_group_name = azurerm_resource_group.cub_roshan_rg.name
 }
 
+
+resource "azurerm_subnet" "aks-subnet" {
+  name                 = "aks-subnet"
+  resource_group_name  = azurerm_resource_group.cub_roshan_rg.name
+  virtual_network_name = azurerm_virtual_network.vnet2.name
+  address_prefixes     = ["10.2.1.0/24"] 
+}
+
+resource "azurerm_subnet" "gw-subnet" {
+  name                 = "gw-subnet"
+  resource_group_name  = azurerm_resource_group.cub_roshan_rg.name
+  virtual_network_name = azurerm_virtual_network.vnet2.name
+  address_prefixes     = ["10.2.2.0/24"]
+}
+
+
+###########################  Peering from VNET-1 to VNET-2 #################################
+resource "azurerm_virtual_network_peering" "vnet1_to_vnet2" {
+  name                         = "vnet1-to-vnet2"
+  resource_group_name          = azurerm_resource_group.cub_roshan_rg.name
+  virtual_network_name         = azurerm_virtual_network.vnet1.name
+  remote_virtual_network_id     = azurerm_virtual_network.vnet2.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  use_remote_gateways          = false
+}
+
+###########################  Peering from VNET-2 to VNET-1 #################################
+resource "azurerm_virtual_network_peering" "vnet2_to_vnet1" {
+  name                         = "vnet2-to-vnet1"
+  resource_group_name          = azurerm_resource_group.cub_roshan_rg.name
+  virtual_network_name         = azurerm_virtual_network.vnet2.name
+  remote_virtual_network_id     = azurerm_virtual_network.vnet1.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  use_remote_gateways          = false
+}
+
+########################### kubernetes cluster #################################
+
+resource "azurerm_kubernetes_cluster" "dev-k8s-cluster" {
+  name                = "k8s-cluster-001"
+  resource_group_name = azurerm_resource_group.cub_roshan_rg.name
+  location            = azurerm_resource_group.cub_roshan_rg.location
+  dns_prefix          = "k8s-cluster-dns"
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1
+    vm_size    = "Standard_DS2_v2"
+    vnet_subnet_id  = azurerm_subnet.aks-subnet.id
+  }
+
+
+  network_profile {
+    network_plugin    = "azure"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  ingress_application_gateway {
+    gateway_id = azurerm_application_gateway.app-gateway.id
+  }
+
+  role_based_access_control_enabled = true
+  private_cluster_enabled           = true
+
+  depends_on = [
+    azurerm_application_gateway.app-gateway
+  ]
+}
+
+resource "azurerm_public_ip" "gw_ip" {
+  name                = "gateway-public-ip"
+  location            = azurerm_resource_group.cub_roshan_rg.location
+  resource_group_name = azurerm_resource_group.cub_roshan_rg.name
+  allocation_method   = "Static" 
+  sku                 = "Standard" 
+}
+
+
+########################### application gateway #################################
+resource "azurerm_application_gateway" "app-gateway" {
+  name                = "App-gateway"
+  resource_group_name = azurerm_resource_group.cub_roshan_rg.name
+  location            = azurerm_resource_group.cub_roshan_rg.location
+
+  sku {
+    name     = "Standard_v2"
+    tier     = "Standard_v2"
+    capacity = 1
+  }
+
+  gateway_ip_configuration {
+    name      = "proj-gateway-ip-config"
+    subnet_id = azurerm_subnet.gw-subnet.id
+  }
+
+  frontend_port {
+    name = "defaultfrontendport"
+    port = 80
+  }
+
+  frontend_ip_configuration {
+    name                 = "defaultfrontendipconfiguration"
+    public_ip_address_id = azurerm_public_ip.gw_ip.id
+  }
+
+  backend_address_pool {
+    name = "defaultbackendaddresspool"
+  }
+
+  backend_http_settings {
+    name                  = "defaulthttpSetting"
+    cookie_based_affinity = "Disabled"
+    path                  = "/"
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 1
+  }
+
+  http_listener {
+    name                           = "defaulthttpListener"
+    frontend_ip_configuration_name = "defaultfrontendipconfiguration"
+    frontend_port_name             = "defaultfrontendport"
+    protocol                       = "Http"
+  }
+
+  request_routing_rule {
+    name                       = "httpRoutingRule"
+    rule_type                  = "Basic"
+    priority                   = "200"
+    http_listener_name         = "defaulthttpListener"
+    backend_address_pool_name  = "defaultbackendaddresspool"
+    backend_http_settings_name = "defaulthttpSetting"
+  }
+}
+
+
