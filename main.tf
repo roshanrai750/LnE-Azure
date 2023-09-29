@@ -1,3 +1,21 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">=3.62.1"
+    }
+  }
+}
+
+
+provider "azurerm" {
+  subscription_id = "411a6b8b-78eb-47c4-80c7-666ab59a7020"
+  client_id       = "d8028c02-3e42-40d0-bb8b-79407e2b9180"
+  client_secret   = "00N8Q~giYNlgBgn1nsivHhxwIKekzWuGHdU1laNO"
+  tenant_id       = "d032994e-e52c-4d44-bc79-9fd88e88ad02"
+  features {}
+
+}
 
 ####################### Resource Grorup ###########################
 resource "azurerm_resource_group" "cub_roshan_rg" {
@@ -120,7 +138,7 @@ resource "azurerm_subnet_network_security_group_association" "test-assosciation"
 ########################### Storage Account ################################
 
 resource "azurerm_storage_account" "sa" {
-  name                     = "cubstorageaccount0001"
+  name                     = "cubstorageaccount001"
   resource_group_name      = azurerm_resource_group.cub_roshan_rg.name
   location                 = azurerm_resource_group.cub_roshan_rg.location
   account_tier             = "Standard"
@@ -159,13 +177,13 @@ resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_link" {
   virtual_network_id    = azurerm_virtual_network.vnet1.id
 }
 
-resource "azurerm_storage_share" "share01" {
+resource "azurerm_storage_share" "share1" {
   name                 = "fileshare1"
   storage_account_name = azurerm_storage_account.sa.name
   quota                = 5
 }
 
-resource "azurerm_storage_share" "share02" {
+resource "azurerm_storage_share" "share2" {
   name                 = "fileshare2"
   storage_account_name = azurerm_storage_account.sa.name
   quota                = 5
